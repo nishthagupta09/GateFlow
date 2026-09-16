@@ -6,14 +6,18 @@ gateway:
     - path: /api/users/**
       service: user-service
       targets:
-      - http://localhost:8081
+      - url: http://localhost:8081
+        weight: 100
 
     - path: /api/payments/**
       service: payment-service
       targets:
-      - http://localhost:8082
-      - http://localhost:8083
-      - http://localhost:8084
+      - url: http://localhost:8082
+        weight: 80
+      - url: http://localhost:8083
+        weight: 10
+      - url: http://localhost:8084
+        weight: 10
 
 rate-limit:
   capacity: 100

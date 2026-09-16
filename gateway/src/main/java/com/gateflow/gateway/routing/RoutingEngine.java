@@ -14,8 +14,7 @@ public class RoutingEngine {
 
     public Route findRoute(String path) {
 
-        for (RouteProperties.RouteDefinition route
-                : routeProperties.getRoutes()) {
+        for (RouteProperties.RouteDefinition route : routeProperties.getRoutes()) {
 
             String routePrefix = route.getPath().replace("/**", "");
 

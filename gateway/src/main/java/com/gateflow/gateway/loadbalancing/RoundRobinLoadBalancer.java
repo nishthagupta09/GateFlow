@@ -1,10 +1,13 @@
 package com.gateflow.gateway.loadbalancing;
 
+import com.gateflow.gateway.config.RouteProperties;
 import com.gateflow.gateway.health.CircuitBreaker;
 import com.gateflow.gateway.health.HealthChecker;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
@@ -19,25 +22,33 @@ public class RoundRobinLoadBalancer {
         this.circuitBreaker=circuitBreaker;
     }
 
-    public String choose(List<String> targets){
+    public String choose(List<RouteProperties.Target> targets){
 
-        List<String> availableTargets = targets.stream()
-                .filter(healthChecker::isHealthy)
-                .filter(circuitBreaker::allowRequest)
+        List<RouteProperties.Target> availableTargets = targets.stream()
+                .filter(target-> healthChecker.isHealthy(target.getUrl()))
+                .filter(target-> circuitBreaker.allowRequest(target.getUrl()))
                 .toList();
 
 
         if (availableTargets.isEmpty()) {
-            throw new IllegalStateException(
-                    "No healthy targets available"
-            );
+            throw new IllegalStateException("No healthy targets available");
         }
 
-        int index = Math.floorMod(
-                counter.getAndIncrement(),
-                availableTargets.size()
-        );
+        List<RouteProperties.Target> weightedTargets = new ArrayList<>();
 
-        return availableTargets.get(index);
+        for (RouteProperties.Target target : availableTargets) {
+
+            for (int i = 0; i < target.getWeight(); i++) {
+                weightedTargets.add(target);
+            }
+        }
+
+        if (weightedTargets.isEmpty()) {
+            throw new IllegalStateException("No targets with valid weights");
+        }
+
+        int index = ThreadLocalRandom.current().nextInt(weightedTargets.size());
+
+        return weightedTargets.get(index).getUrl();
     }
 }

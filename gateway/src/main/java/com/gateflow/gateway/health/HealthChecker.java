@@ -44,16 +44,18 @@ public class HealthChecker {
         for (RouteProperties.RouteDefinition route
                 : routeProperties.getRoutes()) {
 
-            List<String> targets = route.getTargets();
+            List<RouteProperties.Target> targets = route.getTargets();
 
-            for (String target : targets) {
+            for (RouteProperties.Target target : targets) {
 
-                boolean healthy = checkTarget(target);
+                String targetUrl= target.getUrl();
 
-                healthStatus.put(target, healthy);
+                boolean healthy = checkTarget(targetUrl);
+
+                healthStatus.put(targetUrl, healthy);
 
                 logger.info("Health check: {} -> {}",
-                        target,
+                        targetUrl,
                         healthy ? "HEALTHY" : "UNHEALTHY");
             }
         }

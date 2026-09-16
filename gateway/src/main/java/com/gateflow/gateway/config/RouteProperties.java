@@ -21,7 +21,7 @@ public class RouteProperties {
 
         private String path;
         private String service;
-        private List<String> targets;
+        private List<Target> targets;
 
         public String getPath() {
             return path;
@@ -39,12 +39,34 @@ public class RouteProperties {
             this.service = service;
         }
 
-        public List<String> getTargets() {
+        public List<Target> getTargets() {
             return targets;
         }
 
-        public void setTargets(List<String> targets) {
+        public void setTargets(List<Target> targets) {
             this.targets = targets;
+        }
+    }
+
+    public static class Target {
+
+        private String url;
+        private int weight;
+
+        public String getUrl() {
+            return url;
+        }
+
+        public void setUrl(String url) {
+            this.url = url;
+        }
+
+        public int getWeight() {
+            return weight;
+        }
+
+        public void setWeight(int weight) {
+            this.weight = weight;
         }
     }
 
