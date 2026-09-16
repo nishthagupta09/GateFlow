@@ -1,6 +1,9 @@
 package com.gateflow.payment_service.controller;
 
 import com.gateflow.payment_service.service.IdempotencyService;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +15,7 @@ import java.util.UUID;
 public class PaymentServiceController {
 
     private final IdempotencyService idempotencyService;
+    private static final Logger logger = LoggerFactory.getLogger(PaymentServiceController.class);
 
     public PaymentServiceController(IdempotencyService idempotencyService) {
         this.idempotencyService = idempotencyService;
@@ -21,8 +25,14 @@ public class PaymentServiceController {
     private int port;
 
     @PostMapping
-    public ResponseEntity<String> createPayment(@RequestHeader(value = "Idempotency-Key", required = false)
-            String idempotencyKey, @RequestBody PaymentRequest request) {
+    public ResponseEntity<String> createPayment(  HttpServletRequest httpRequest,
+                                                  @RequestHeader(value = "Idempotency-Key", required = false)
+                                                  String idempotencyKey,
+                                                  @RequestBody PaymentRequest request) {
+
+        String requestId = httpRequest.getHeader("X-Request-ID");
+        logger.info("[{}] Payment request received",
+                requestId);
 
         System.out.println("Payment request received by port: " + port);
 

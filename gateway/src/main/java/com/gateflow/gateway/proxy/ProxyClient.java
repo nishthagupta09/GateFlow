@@ -58,7 +58,8 @@ public class ProxyClient {
                         || headerName.equalsIgnoreCase("Host")
                         || headerName.equalsIgnoreCase("Content-Length")
                         || headerName.equalsIgnoreCase("Transfer-Encoding")
-                        || headerName.equalsIgnoreCase("Upgrade")) {
+                        || headerName.equalsIgnoreCase("Upgrade")
+                        || headerName.equalsIgnoreCase("Expect")){
                     continue;
                 }
 

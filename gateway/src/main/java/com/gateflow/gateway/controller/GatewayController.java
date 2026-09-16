@@ -70,6 +70,10 @@ public class GatewayController {
             );
         }
 
+        String requestId = (String) request.getAttribute("X-Request-ID");
+
+        headers.put("X-Request-ID", requestId);
+
         try {
 
             HttpResponse<String> response =
