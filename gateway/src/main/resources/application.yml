@@ -22,3 +22,9 @@ gateway:
 rate-limit:
   capacity: 100
   window-seconds: 60
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus

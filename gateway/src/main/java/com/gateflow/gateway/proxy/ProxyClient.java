@@ -1,5 +1,6 @@
 package com.gateflow.gateway.proxy;
 
+import com.gateflow.gateway.metrics.GatewayMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -22,9 +23,11 @@ public class ProxyClient {
     private static final int MAX_ATTEMPTS = 3;
     private static final long INITIAL_DELAY_MS = 100;
     private static final Logger logger = LoggerFactory.getLogger(ProxyClient.class);
+    private final GatewayMetrics gatewayMetrics;
 
-    public ProxyClient(){   //constructor
+    public ProxyClient(GatewayMetrics gatewayMetrics){   //constructor
         this.httpClient=HttpClient.newHttpClient();
+        this.gatewayMetrics=gatewayMetrics;
     }
 
     public HttpResponse<String> forward(
@@ -102,6 +105,8 @@ public class ProxyClient {
 
                 long delay = exponentialDelay + jitter;
 
+                gatewayMetrics.recordRetry();
+
                 logger.info("Retrying after {} ms", delay);
                 Thread.sleep(delay);
                 continue;
@@ -116,6 +121,8 @@ public class ProxyClient {
             long jitter = ThreadLocalRandom.current().nextLong(0, 51);
 
             long delay = exponentialDelay + jitter;
+
+            gatewayMetrics.recordRetry();
 
             logger.info("Retrying after {} ms", delay);
             Thread.sleep(delay);

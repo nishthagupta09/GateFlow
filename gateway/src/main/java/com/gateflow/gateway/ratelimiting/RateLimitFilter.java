@@ -1,5 +1,6 @@
 package com.gateflow.gateway.ratelimiting;
 
+import com.gateflow.gateway.metrics.GatewayMetrics;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,9 +14,11 @@ import java.io.IOException;
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private final RateLimiter rateLimiter;
+    private final GatewayMetrics gatewayMetrics;
 
-    public RateLimitFilter(RateLimiter rateLimiter) {
+    public RateLimitFilter(RateLimiter rateLimiter, GatewayMetrics gatewayMetrics) {
         this.rateLimiter = rateLimiter;
+        this.gatewayMetrics=gatewayMetrics;
     }
 
     @Override
@@ -27,10 +30,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         String clientId = request.getRemoteAddr();
 
-        boolean allowed =
-                rateLimiter.isAllowed(clientId);
+        boolean allowed = rateLimiter.isAllowed(clientId);
+
+        gatewayMetrics.recordRequest();
 
         if (!allowed) {
+
+            gatewayMetrics.recordRateLimitRejection();
 
             response.setStatus(429);
             response.setContentType("application/json");

@@ -2,9 +2,11 @@ package com.gateflow.gateway.controller;
 
 import com.gateflow.gateway.health.CircuitBreaker;
 import com.gateflow.gateway.loadbalancing.RoundRobinLoadBalancer;
+import com.gateflow.gateway.metrics.GatewayMetrics;
 import com.gateflow.gateway.proxy.ProxyClient;
 import com.gateflow.gateway.routing.Route;
 import com.gateflow.gateway.routing.RoutingEngine;
+import io.micrometer.core.instrument.Timer;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,12 +25,14 @@ public class GatewayController {
     private final ProxyClient proxyClient;
     private final RoundRobinLoadBalancer loadBalancer;
     private final CircuitBreaker circuitBreaker;
+    private final GatewayMetrics gatewayMetrics;
 
-    public GatewayController(RoutingEngine routingEngine,  ProxyClient proxyClient, RoundRobinLoadBalancer loadBalancer, CircuitBreaker circuitBreaker) {
+    public GatewayController(RoutingEngine routingEngine,  ProxyClient proxyClient, RoundRobinLoadBalancer loadBalancer, CircuitBreaker circuitBreaker, GatewayMetrics gatewayMetrics) {
         this.routingEngine = routingEngine;
         this.proxyClient= proxyClient;
         this.loadBalancer=loadBalancer;
         this.circuitBreaker=circuitBreaker;
+        this.gatewayMetrics=gatewayMetrics;
     }
 
     @GetMapping("/health")
@@ -39,6 +43,8 @@ public class GatewayController {
     @RequestMapping("/**")
     public ResponseEntity<String> proxy(HttpServletRequest request,
                         @RequestBody(required = false) String body) throws Exception {
+
+        Timer.Sample timer = gatewayMetrics.startTimer();
 
         String path = request.getRequestURI();
 
@@ -109,6 +115,9 @@ public class GatewayController {
                                 "message": "Downstream service did not respond within the timeout"
                             }
                             """);
+        }
+        finally {
+            gatewayMetrics.recordLatency(timer);
         }
     }
 }

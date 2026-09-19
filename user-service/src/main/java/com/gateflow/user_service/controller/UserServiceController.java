@@ -43,5 +43,17 @@ public class UserServiceController {
             """.formatted(id));
     }
 
+    @GetMapping("/users/retry-test")
+    public ResponseEntity<String> retryTest() {
+
+        return ResponseEntity
+                .status(500)
+                .body("""
+                    {
+                        "error": "Temporary failure for retry testing"
+                    }
+                    """);
+    }
+
 
 }
