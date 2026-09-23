@@ -6,6 +6,7 @@ import com.gateflow.gateway.metrics.GatewayMetrics;
 import com.gateflow.gateway.proxy.ProxyClient;
 import com.gateflow.gateway.routing.Route;
 import com.gateflow.gateway.routing.RoutingEngine;
+import com.gateflow.gateway.shadow.ShadowTrafficService;
 import io.micrometer.core.instrument.Timer;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
@@ -26,13 +27,20 @@ public class GatewayController {
     private final RoundRobinLoadBalancer loadBalancer;
     private final CircuitBreaker circuitBreaker;
     private final GatewayMetrics gatewayMetrics;
+    private final ShadowTrafficService shadowTrafficService;
 
-    public GatewayController(RoutingEngine routingEngine,  ProxyClient proxyClient, RoundRobinLoadBalancer loadBalancer, CircuitBreaker circuitBreaker, GatewayMetrics gatewayMetrics) {
+    public GatewayController(RoutingEngine routingEngine,
+                             ProxyClient proxyClient,
+                             RoundRobinLoadBalancer loadBalancer,
+                             CircuitBreaker circuitBreaker,
+                             GatewayMetrics gatewayMetrics,
+                             ShadowTrafficService shadowTrafficService) {
         this.routingEngine = routingEngine;
         this.proxyClient= proxyClient;
         this.loadBalancer=loadBalancer;
         this.circuitBreaker=circuitBreaker;
         this.gatewayMetrics=gatewayMetrics;
+        this.shadowTrafficService=shadowTrafficService;
     }
 
     @GetMapping("/health")
@@ -53,6 +61,8 @@ public class GatewayController {
         String downstreamPath = path.substring(4);
 
         String target = loadBalancer.choose(route.targets());
+
+        gatewayMetrics.recordDownstreamRequest(target);
 
         String targetUrl = target + downstreamPath;
 
@@ -79,6 +89,13 @@ public class GatewayController {
         String requestId = (String) request.getAttribute("X-Request-ID");
 
         headers.put("X-Request-ID", requestId);
+
+        shadowTrafficService.mirror(
+                request.getMethod(),
+                downstreamPath,
+                queryString,
+                headers,
+                body);
 
         try {
 

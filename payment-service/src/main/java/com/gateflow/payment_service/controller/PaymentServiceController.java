@@ -26,8 +26,8 @@ public class PaymentServiceController {
 
     @PostMapping
     public ResponseEntity<String> createPayment(  HttpServletRequest httpRequest,
-                                                  @RequestHeader(value = "Idempotency-Key", required = false)
-                                                  String idempotencyKey,
+                                                  @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+                                                  @RequestHeader(value = "X-Shadow-Request", required = false) String shadowRequest,
                                                   @RequestBody PaymentRequest request) {
 
         String requestId = httpRequest.getHeader("X-Request-ID");
@@ -47,6 +47,29 @@ public class PaymentServiceController {
                 request.amount(),
                 request.currency()
         );
+
+        if ("true".equalsIgnoreCase(shadowRequest)) {
+            String simulatedPaymentId = "shadow-" + UUID.randomUUID();
+
+            return ResponseEntity.ok("""
+            {
+                "paymentId": "%s",
+                "userId": %d,
+                "amount": %.2f,
+                "currency": "%s",
+                "status": "SIMULATED",
+                "service": "payment-service",
+                "port": %d,
+                "shadow": true
+            }
+            """.formatted(
+                    simulatedPaymentId,
+                    request.userId(),
+                    request.amount(),
+                    request.currency(),
+                    port
+            ));
+        }
 
         if (idempotencyKey != null && !idempotencyKey.isBlank()) {
 
@@ -126,4 +149,5 @@ public class PaymentServiceController {
             Double amount,
             String currency
     ) {}
+
 }
