@@ -21,7 +21,7 @@ public class PaymentServiceController {
         this.idempotencyService = idempotencyService;
     }
 
-    @Value("${server.port}")
+    @Value("${server.port:8082}")
     private int port;
 
     @PostMapping
