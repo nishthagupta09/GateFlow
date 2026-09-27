@@ -53,3 +53,4 @@ jobs:
       - name: Test Payment Service
         working-directory: payment-service
         run: mvn --batch-mode test
+
