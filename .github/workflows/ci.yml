@@ -1,0 +1,55 @@
+name: GateFlow CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build User Service
+        working-directory: user-service
+        run: mvn --batch-mode package -DskipTests
+
+      - name: Start User Service
+        working-directory: user-service
+        run: |
+          nohup java -jar target/*.jar --server.port=8081 > user-service.log 2>&1 &
+
+      - name: Wait for User Service
+        run: |
+          curl --fail --retry 30 --retry-delay 2 --retry-connrefused \
+            http://localhost:8081/health
+
+      - name: Test Gateway
+        working-directory: gateway
+        run: mvn --batch-mode test
+
+      - name: Test Payment Service
+        working-directory: payment-service
+        run: mvn --batch-mode test
